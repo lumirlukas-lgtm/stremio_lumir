@@ -83,7 +83,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
   try {
 
-    const url = `https://hellspy.to/?query=${encodeURIComponent(query)}`;
+    const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://hellspy.to/?query=${encodeURIComponent(query)}`)}`;
     console.log("FETCH URL:", url);
 
     const response = await fetchHellspy(url);
