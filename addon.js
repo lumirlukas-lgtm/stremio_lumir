@@ -50,23 +50,26 @@ builder.defineCatalogHandler(async (args) => {
 
     const metas = [];
 
-    $("a[href*='/film/']").each((i, el) => {
-
-      if (i > 20) return false;
-
+    $("a").each((i, el) => {
+    
+      const href = $(el).attr("href") || "";
       const name = $(el).text().trim();
-      const link = $(el).attr("href");
-
+    
+      if (!href.includes("/film/")) return;
       if (!name) return;
-
+    
       metas.push({
         id: encodeURIComponent(name),
         type: "movie",
         name: name,
         poster: "https://via.placeholder.com/300x450",
-        externalUrl: "https://www.hellspy.to" + link
+        externalUrl: "https://www.hellspy.to" + href
       });
 
+});
+
+console.log("Metas found:", metas.length);
+return { metas };
     });
 
     console.log("Metas found:", metas.length);
