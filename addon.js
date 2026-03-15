@@ -1,8 +1,7 @@
 const { addonBuilder } = require("stremio-addon-sdk");
-
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.1",
+  version: "1.0.2",
   name: "Hello World Addon",
   description: "Můj první Stremio addon!",
   resources: ["catalog", "meta", "stream"],
@@ -12,20 +11,17 @@ const manifest = {
       type: "movie",
       id: "helloworldmovies",
       name: "Hello World filmy",
-      extra: [{ name: "search", isRequired: false }]
+      extra: [{ name: "search", isRequired: false }],
+      extraSupported: ["search"]
     }
   ]
 };
-
 const builder = new addonBuilder(manifest);
-
 
 // CATALOG + SEARCH
 builder.defineCatalogHandler(async function(args) {
-
   if (args.extra && args.extra.search) {
     const query = args.extra.search;
-
     return {
       metas: [
         {
@@ -37,7 +33,6 @@ builder.defineCatalogHandler(async function(args) {
       ]
     };
   }
-
   return {
     metas: [
       {
@@ -56,7 +51,6 @@ builder.defineCatalogHandler(async function(args) {
   };
 });
 
-
 // META
 builder.defineMetaHandler(async function(args) {
   return {
@@ -69,7 +63,6 @@ builder.defineMetaHandler(async function(args) {
     }
   };
 });
-
 
 // STREAM
 builder.defineStreamHandler(async function(args) {
