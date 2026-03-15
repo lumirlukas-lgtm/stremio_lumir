@@ -27,49 +27,33 @@ builder.defineCatalogHandler(async ({ extra }) => {
   console.log("---- CATALOG HANDLER START ----");
 
   if (!extra || !extra.search) {
-    console.log("NO SEARCH PARAM");
     return { metas: [] };
   }
 
   const query = extra.search.trim();
-  console.log("SEARCH QUERY:", query);
+
+  const url = `https://hellspy.to/?query=${encodeURIComponent(query)}&offset=0&limit=64`;
+
+  console.log("API URL:", url);
 
   try {
 
-    const target = `https://hellspy.to/?query=${encodeURIComponent(query)}`;
-    const url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`;
-
-    console.log("FETCH URL:", url);
-
-    const response = await axios.get(url, { timeout: 15000 });
-
-    console.log("STATUS:", response.status);
-    console.log("HTML SIZE:", response.data.length);
-
-    const $ = cheerio.load(response.data);
-    const metas = [];
-
-    const elements = $("a.result-video");
-    console.log("ELEMENTS FOUND:", elements.length);
-
-    elements.each((i, el) => {
-
-      const name = $(el).attr("title");
-      const href = $(el).attr("href");
-
-      if (!name || !href) return;
-
-      metas.push({
-        id: href,
-        type: "movie",
-        name: name,
-        poster: "https://via.placeholder.com/300x450"
-      });
-
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
     });
 
-    console.log("METAS COUNT:", metas.length);
-    console.log("---- CATALOG HANDLER END ----");
+    const data = response.data;
+
+    const metas = data.results.map(v => ({
+      id: `/video/${v.id}`,
+      type: "movie",
+      name: v.title,
+      poster: v.thumbnail
+    }));
+
+    console.log("METAS:", metas.length);
 
     return { metas: metas.slice(0, 30) };
 
