@@ -1,15 +1,10 @@
 const { addonBuilder } = require("stremio-addon-sdk");
 const axios = require("axios");
 const cheerio = require("cheerio");
-const https = require("https");
-
-const agent = new https.Agent({
-  keepAlive: true
-});
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.14",
+  version: "1.0.15",
   name: "Hello World Addon",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
@@ -27,48 +22,6 @@ const manifest = {
 const builder = new addonBuilder(manifest);
 
 
-async function fetchHellspy(url) {
-
-  for (let i = 0; i < 3; i++) {
-
-    try {
-
-      const response = await axios.get(url, {
-        httpsAgent: agent,
-        timeout: 15000,
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-          "Accept":
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Referer": "https://www.hellspy.to/"
-        }
-      });
-
-      return response;
-
-    } catch (err) {
-
-      if (err.response && err.response.status === 429) {
-
-        console.log("RATE LIMITED - retry", i + 1);
-        await new Promise(r => setTimeout(r, 2000));
-
-      } else {
-
-        throw err;
-
-      }
-
-    }
-
-  }
-
-  throw new Error("Failed after retries");
-}
-
-
 builder.defineCatalogHandler(async ({ extra }) => {
 
   console.log("---- CATALOG HANDLER START ----");
@@ -83,12 +36,14 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
   try {
 
-    const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://hellspy.to/?query=${encodeURIComponent(query)}`)}`;
+    const target = `https://hellspy.to/?query=${encodeURIComponent(query)}`;
+    const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
+
     console.log("FETCH URL:", url);
 
-    const response = await fetchHellspy(url);
+    const response = await axios.get(url, { timeout: 15000 });
 
-    console.log("HELLSPY STATUS:", response.status);
+    console.log("STATUS:", response.status);
     console.log("HTML SIZE:", response.data.length);
 
     const $ = cheerio.load(response.data);
@@ -103,8 +58,6 @@ builder.defineCatalogHandler(async ({ extra }) => {
       const href = $(el).attr("href");
 
       if (!name || !href) return;
-
-      console.log("ITEM:", name);
 
       metas.push({
         id: href,
