@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.7",
+  version: "1.0.8",
   name: "Hello World Addon",
   description: "Addon s online search handlerem",
   resources: ["catalog", "meta", "stream"],
@@ -14,29 +14,24 @@ const manifest = {
       type: "movie",
       id: "helloworldmovies",
       name: "Online filmy",
-      extra: [{ name: "search", isRequired: false }]
+      extra: [{ name: "search", isRequired: false }],
+      extraSupported: ["search"]
     }
   ]
 };
 
 const builder = new addonBuilder(manifest);
 
-// --- CATALOG + SEARCH ---
 builder.defineCatalogHandler(async function(args) {
-  console.log("CATALOG REQUEST:", args)
+  console.log("CATALOG REQUEST:", args);
   if (args.extra && args.extra.search) {
     const query = args.extra.search.trim();
     console.log("SEARCH QUERY:", query);
-
     try {
-      // Změň URL na svůj zdroj, který vrací výsledky staticky
-      const url = `https://www.hellspy.to/?query=${encodeURIComponent(query)}`;
+      const url = `https://www.example.com/?query=${encodeURIComponent(query)}`;
       const response = await axios.get(url, { timeout: 7000 });
       const $ = cheerio.load(response.data);
-
       const metas = [];
-
-      // Selektory uprav podle skutečné HTML struktury stránky
       $(".film-item").each(function() {
         const name = $(this).find(".title").text().trim();
         const link = $(this).find("a").attr("href");
@@ -47,25 +42,20 @@ builder.defineCatalogHandler(async function(args) {
             type: "movie",
             name: name,
             poster: poster,
-            // externalUrl otevře odkaz přímo ve Stremiu
             externalUrl: link
           });
         }
       });
-
       console.log("Metas found:", metas.length);
       return { metas };
-
     } catch (e) {
       console.error("Search error:", e.message);
       return { metas: [] };
     }
   }
-
   return { metas: [] };
 });
 
-// --- META ---
 builder.defineMetaHandler(async function(args) {
   return {
     meta: {
@@ -78,12 +68,8 @@ builder.defineMetaHandler(async function(args) {
   };
 });
 
-// --- STREAM ---
 builder.defineStreamHandler(async function(args) {
-  // Pokud je externalUrl, Stremio otevře odkaz přímo
-  return {
-    streams: []
-  };
+  return { streams: [] };
 });
 
 module.exports = builder.getInterface();
