@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.12",
+  version: "1.0.13",
   name: "Hello World Addon",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
@@ -23,13 +23,20 @@ const builder = new addonBuilder(manifest);
 
 builder.defineCatalogHandler(async ({ extra }) => {
 
-  if (!extra || !extra.search) return { metas: [] };
+  console.log("---- CATALOG HANDLER START ----");
+
+  if (!extra || !extra.search) {
+    console.log("NO SEARCH PARAM");
+    return { metas: [] };
+  }
 
   const query = extra.search.trim();
+  console.log("SEARCH QUERY:", query);
 
   try {
 
     const url = `https://www.hellspy.to/?query=${encodeURIComponent(query)}`;
+    console.log("FETCH URL:", url);
 
     const response = await axios.get(url, {
       timeout: 15000,
@@ -39,13 +46,22 @@ builder.defineCatalogHandler(async ({ extra }) => {
       }
     });
 
+    console.log("HELLSPY STATUS:", response.status);
+    console.log("HTML SIZE:", response.data.length);
+    console.log("HTML SAMPLE:", response.data.substring(0, 500));
+
     const $ = cheerio.load(response.data);
     const metas = [];
 
-    $(".result-video").each((i, el) => {
+    const elements = $(".result-video");
+    console.log("ELEMENTS FOUND:", elements.length);
+
+    elements.each((i, el) => {
 
       const name = $(el).attr("title");
       const href = $(el).attr("href");
+
+      console.log("ITEM:", name, href);
 
       if (!name || !href) return;
 
@@ -58,11 +74,15 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
     });
 
+    console.log("METAS COUNT:", metas.length);
+    console.log("---- CATALOG HANDLER END ----");
+
     return { metas: metas.slice(0, 30) };
 
   } catch (err) {
 
     console.error("SEARCH ERROR:", err.message);
+    console.error(err);
 
     return { metas: [] };
 
@@ -71,6 +91,8 @@ builder.defineCatalogHandler(async ({ extra }) => {
 });
 
 builder.defineMetaHandler(async ({ id }) => {
+
+  console.log("META REQUEST:", id);
 
   return {
     meta: {
@@ -84,7 +106,9 @@ builder.defineMetaHandler(async ({ id }) => {
 
 });
 
-builder.defineStreamHandler(async () => {
+builder.defineStreamHandler(async ({ id }) => {
+
+  console.log("STREAM REQUEST:", id);
 
   return { streams: [] };
 
