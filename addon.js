@@ -21,7 +21,22 @@ const builder = new addonBuilder(manifest);
 // CATALOG + SEARCH
 builder.defineCatalogHandler(async function(args) {
   if (args.extra && args.extra.search) {
-    const query = args.extra.search;
+    const query = args.extra.search.toLowerCase();
+
+    if (query.includes("lumir")) {
+      return {
+        metas: [
+          {
+            id: "lumir-special",
+            type: "movie",
+            name: "👋 Ahoj Lumíre!",
+            poster: "https://via.placeholder.com/300x450/6a0dad/ffffff?text=LUMIR",
+            description: "Našel jsi tajný velikonoční vajíčko! 🥚"
+          }
+        ]
+      };
+    }
+
     return {
       metas: [
         {
@@ -33,6 +48,7 @@ builder.defineCatalogHandler(async function(args) {
       ]
     };
   }
+
   return {
     metas: [
       {
