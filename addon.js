@@ -4,46 +4,59 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.4",
+  version: "1.0.6",
   name: "Hello World Addon",
-  description: "Můj první Stremio addon!",
+  description: "Addon s online search handlerem",
   resources: ["catalog", "meta", "stream"],
   types: ["movie"],
   catalogs: [
     {
       type: "movie",
       id: "helloworldmovies",
-      name: "Hello World filmy",
-      extra: [{ name: "search", isRequired: false }],
-      extraSupported: ["search"]
+      name: "Online filmy",
+      extra: [{ name: "search", isRequired: false }]
     }
   ]
 };
 
 const builder = new addonBuilder(manifest);
 
-// CATALOG + SEARCH
+// --- CATALOG + SEARCH ---
 builder.defineCatalogHandler(async function(args) {
   if (args.extra && args.extra.search) {
-    const query = args.extra.search;
+    const query = args.extra.search.trim();
+    console.log("SEARCH QUERY:", query);
 
     try {
+      // Změň URL na svůj zdroj, který vrací výsledky staticky
       const url = `https://www.hellspy.to/?query=${encodeURIComponent(query)}`;
-      const response = await axios.get(url, { timeout: 5000 });
+      const response = await axios.get(url, { timeout: 7000 });
       const $ = cheerio.load(response.data);
 
       const metas = [];
+
+      // Selektory uprav podle skutečné HTML struktury stránky
       $(".film-item").each(function() {
         const name = $(this).find(".title").text().trim();
-        const poster = $(this).find("img").attr("src");
-        const id = "ext-" + encodeURIComponent(name);
-        if (name) metas.push({ id, type: "movie", name, poster });
+        const link = $(this).find("a").attr("href");
+        const poster = $(this).find("img").attr("src") || "https://via.placeholder.com/300x450";
+        if (name && link) {
+          metas.push({
+            id: encodeURIComponent(name),
+            type: "movie",
+            name: name,
+            poster: poster,
+            // externalUrl otevře odkaz přímo ve Stremiu
+            externalUrl: link
+          });
+        }
       });
 
+      console.log("Metas found:", metas.length);
       return { metas };
 
-    } catch(e) {
-      console.error("Chyba:", e.message);
+    } catch (e) {
+      console.error("Search error:", e.message);
       return { metas: [] };
     }
   }
@@ -51,28 +64,24 @@ builder.defineCatalogHandler(async function(args) {
   return { metas: [] };
 });
 
-// META
+// --- META ---
 builder.defineMetaHandler(async function(args) {
   return {
     meta: {
       id: args.id,
       type: "movie",
-      name: "Test film",
+      name: args.id,
       poster: "https://via.placeholder.com/300x450",
-      description: "Test metadata"
+      description: "Film z online search handleru"
     }
   };
 });
 
-// STREAM
+// --- STREAM ---
 builder.defineStreamHandler(async function(args) {
+  // Pokud je externalUrl, Stremio otevře odkaz přímo
   return {
-    streams: [
-      {
-        title: "Test Stream",
-        url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-      }
-    ]
+    streams: []
   };
 });
 
