@@ -107,7 +107,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
   const query = extra.search.trim();
 
   const apiUrl =
-    `https://pokusne.com/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=64`;
+    `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=64`;
 
   try {
 
