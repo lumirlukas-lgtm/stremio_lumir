@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.9",
+  version: "1.0.10",
   name: "Hello World Addon",
   description: "Hellspy search addon",
   resources: ["catalog", "meta", "stream"],
