@@ -23,6 +23,7 @@ const builder = new addonBuilder(manifest);
 
 // --- CATALOG + SEARCH ---
 builder.defineCatalogHandler(async function(args) {
+  console.log("CATALOG REQUEST:", args)
   if (args.extra && args.extra.search) {
     const query = args.extra.search.trim();
     console.log("SEARCH QUERY:", query);
