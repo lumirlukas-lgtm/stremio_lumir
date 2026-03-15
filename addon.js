@@ -32,7 +32,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
   const query = extra.search.trim();
 
-  const url = `https://hellspy.to/?query=${encodeURIComponent(query)}&offset=0&limit=64`;
+  const url = `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=64`;
 
   console.log("API URL:", url);
 
@@ -40,20 +40,23 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
     const response = await axios.get(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "*/*",
+        "Origin": "https://www.hellspy.to",
+        "Referer": "https://www.hellspy.to/"
       }
     });
 
-    const data = response.data;
+    const results = response.data.results || [];
 
-    const metas = data.results.map(v => ({
+    const metas = results.map(v => ({
       id: `/video/${v.id}`,
       type: "movie",
       name: v.title,
       poster: v.thumbnail
     }));
 
-    console.log("METAS:", metas.length);
+    console.log("RESULTS:", metas.length);
 
     return { metas: metas.slice(0, 30) };
 
@@ -65,7 +68,6 @@ builder.defineCatalogHandler(async ({ extra }) => {
   }
 
 });
-
 
 builder.defineMetaHandler(async ({ id }) => {
 
