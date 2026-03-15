@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.11",
+  version: "1.0.12",
   name: "Hello World Addon",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
@@ -26,7 +26,6 @@ builder.defineCatalogHandler(async ({ extra }) => {
   if (!extra || !extra.search) return { metas: [] };
 
   const query = extra.search.trim();
-  console.log("SEARCH:", query);
 
   try {
 
@@ -41,30 +40,23 @@ builder.defineCatalogHandler(async ({ extra }) => {
     });
 
     const $ = cheerio.load(response.data);
-
     const metas = [];
-    const used = new Set();
 
-    $("a[href*='/film']").each((i, el) => {
+    $(".result-video").each((i, el) => {
 
+      const name = $(el).attr("title");
       const href = $(el).attr("href");
-      const name = $(el).text().trim();
 
-      if (!href || !name) return;
-
-      if (used.has(name)) return;
-      used.add(name);
+      if (!name || !href) return;
 
       metas.push({
-        id: encodeURIComponent(name),
+        id: encodeURIComponent(href),
         type: "movie",
         name: name,
         poster: "https://via.placeholder.com/300x450"
       });
 
     });
-
-    console.log("RESULTS:", metas.length);
 
     return { metas: metas.slice(0, 30) };
 
