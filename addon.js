@@ -4,71 +4,104 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.8",
+  version: "1.0.9",
   name: "Hello World Addon",
-  description: "Addon s online search handlerem",
+  description: "Hellspy search addon",
   resources: ["catalog", "meta", "stream"],
   types: ["movie"],
   catalogs: [
     {
       type: "movie",
       id: "helloworldmovies",
-      name: "Online filmy",
-      extra: [{ name: "search", isRequired: false }],
-      extraSupported: ["search"]
+      name: "Hellspy Search",
+      extra: [{ name: "search", isRequired: false }]
     }
   ]
 };
 
 const builder = new addonBuilder(manifest);
 
-builder.defineCatalogHandler(async function(args) {
+// ---------------- SEARCH ----------------
+
+builder.defineCatalogHandler(async (args) => {
+
   console.log("CATALOG REQUEST:", args);
-  if (args.extra && args.extra.search) {
-    const query = args.extra.search.trim();
-    console.log("SEARCH QUERY:", query);
-    try {
-      const url = `https://www.hellspy.to/?query=${encodeURIComponent(query)}`;
-      const response = await axios.get(url, { timeout: 7000 });
-      const $ = cheerio.load(response.data);
-      const metas = [];
-      $(".film-item").each(function() {
-        const name = $(this).find(".title").text().trim();
-        const link = $(this).find("a").attr("href");
-        const poster = $(this).find("img").attr("src") || "https://via.placeholder.com/300x450";
-        if (name && link) {
-          metas.push({
-            id: encodeURIComponent(name),
-            type: "movie",
-            name: name,
-            poster: poster,
-            externalUrl: link
-          });
-        }
-      });
-      console.log("Metas found:", metas.length);
-      return { metas };
-    } catch (e) {
-      console.error("Search error:", e.message);
-      return { metas: [] };
-    }
+
+  if (!args.extra || !args.extra.search) {
+    return { metas: [] };
   }
-  return { metas: [] };
+
+  const query = args.extra.search.trim();
+  console.log("SEARCH:", query);
+
+  try {
+
+    const url = `https://www.hellspy.to/?query=${encodeURIComponent(query)}`;
+
+    const response = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+
+    const metas = [];
+
+    $("a[href*='/film/']").each((i, el) => {
+
+      if (i > 20) return false;
+
+      const name = $(el).text().trim();
+      const link = $(el).attr("href");
+
+      if (!name) return;
+
+      metas.push({
+        id: encodeURIComponent(name),
+        type: "movie",
+        name: name,
+        poster: "https://via.placeholder.com/300x450",
+        externalUrl: "https://www.hellspy.to" + link
+      });
+
+    });
+
+    console.log("Metas found:", metas.length);
+
+    return { metas };
+
+  } catch (e) {
+
+    console.error("Search error:", e.message);
+
+    return { metas: [] };
+
+  }
+
 });
 
-builder.defineMetaHandler(async function(args) {
+// ---------------- META ----------------
+
+builder.defineMetaHandler(async (args) => {
+
   return {
     meta: {
       id: args.id,
       type: "movie",
       name: args.id,
       poster: "https://via.placeholder.com/300x450",
-      description: "Film z online search handleru"
+      description: "Hellspy výsledky"
     }
   };
+
 });
 
-builder.defineStreamHandler(async function(args) {
+// ---------------- STREAM ----------------
+
+builder.defineStreamHandler(async () => {
   return { streams: [] };
 });
 
