@@ -28,7 +28,7 @@ builder.defineCatalogHandler(async function(args) {
     const query = args.extra.search.trim();
     console.log("SEARCH QUERY:", query);
     try {
-      const url = `https://www.example.com/?query=${encodeURIComponent(query)}`;
+      const url = `https://www.hellspy.to/?query=${encodeURIComponent(query)}`;
       const response = await axios.get(url, { timeout: 7000 });
       const $ = cheerio.load(response.data);
       const metas = [];
