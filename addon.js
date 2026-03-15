@@ -32,22 +32,20 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
   const query = extra.search.trim();
 
-  const url = `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=64`;
+  const target = `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=64`;
 
-  console.log("API URL:", url);
+  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
+
+  console.log("PROXY URL:", url);
 
   try {
 
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "*/*",
-        "Origin": "https://www.hellspy.to",
-        "Referer": "https://www.hellspy.to/"
-      }
-    });
+    const response = await axios.get(url, { timeout: 15000 });
 
-    const results = response.data.results || [];
+    console.log("STATUS:", response.status);
+
+    const data = response.data;
+    const results = data.results || [];
 
     const metas = results.map(v => ({
       id: `/video/${v.id}`,
