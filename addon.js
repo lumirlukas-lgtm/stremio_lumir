@@ -37,7 +37,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
   try {
 
     const target = `https://hellspy.to/?query=${encodeURIComponent(query)}`;
-    const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
+    const url = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`;
 
     console.log("FETCH URL:", url);
 
