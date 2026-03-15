@@ -1,7 +1,7 @@
 const { addonBuilder } = require("stremio-addon-sdk");
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.2",
+  version: "1.0.3",
   name: "Hello World Addon",
   description: "Můj první Stremio addon!",
   resources: ["catalog", "meta", "stream"],
