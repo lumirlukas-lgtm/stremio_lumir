@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.16",
+  version: "1.0.17",
   name: "Hello World Addon",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
@@ -21,8 +21,45 @@ const manifest = {
 
 const builder = new addonBuilder(manifest);
 
-// proxy fallback
+
+// ---------------- CACHE ----------------
+
+const cache = new Map();
+const CACHE_TIME = 5 * 60 * 1000;
+
+function getCache(key) {
+
+  const item = cache.get(key);
+
+  if (!item) return null;
+
+  if (Date.now() > item.expire) {
+    cache.delete(key);
+    return null;
+  }
+
+  console.log("CACHE HIT:", key);
+
+  return item.data;
+
+}
+
+function setCache(key, data) {
+
+  cache.set(key, {
+    data,
+    expire: Date.now() + CACHE_TIME
+  });
+
+}
+
+
+// ---------------- FETCH WITH PROXY ----------------
+
 async function fetchProxy(url) {
+
+  const cached = getCache(url);
+  if (cached) return cached;
 
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -33,13 +70,31 @@ async function fetchProxy(url) {
   for (const proxy of proxies) {
 
     try {
+
+      console.log("TRY:", proxy);
+
       const res = await axios.get(proxy, { timeout: 10000 });
-      if (res.status === 200) return res.data;
-    } catch (e) {}
+
+      let data = res.data;
+
+      if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch {}
+      }
+
+      setCache(url, data);
+
+      return data;
+
+    } catch (e) {
+
+      console.log("PROXY FAIL:", proxy);
+
+    }
 
   }
 
   throw new Error("All proxies failed");
+
 }
 
 
@@ -57,6 +112,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
   try {
 
     const data = await fetchProxy(apiUrl);
+
     const results = data.results || [];
 
     const metas = results.slice(0, 30).map(v => ({
@@ -66,7 +122,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
       poster: v.thumbnail
     }));
 
-    console.log("CATALOG results:", metas.length);
+    console.log("CATALOG RESULTS:", metas.length);
 
     return { metas };
 
@@ -153,7 +209,7 @@ builder.defineStreamHandler(async ({ id }) => {
 
     });
 
-    console.log("STREAMS:", streams.length);
+    console.log("STREAMS FOUND:", streams.length);
 
     return { streams };
 
