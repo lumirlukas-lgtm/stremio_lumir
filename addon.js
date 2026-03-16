@@ -272,16 +272,14 @@ builder.defineStreamHandler(async ({ id }) => {
 
     console.log("STREAM URL:", url)
 
-    return {
-      streams: [{
-        name: "HellSpy",
-        title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
-        externalUrl: url,
-        behaviorHints: {
-          bingeGroup: "hellspy"
-        }
-      }]
-    }
+   return {
+  streams: [{
+    name: "HellSpy",
+    description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
+    title: `💾${sizeGB}GB`,
+    url: `https://stremio-lumir.onrender.com/play/${item.fileHash}/${item.id}`
+  }]
+}
 
   }
 
