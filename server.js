@@ -9,7 +9,7 @@ const port = Number(process.env.PORT) || 7000
 // Express server
 const app = express()
 
-// ===== HellSpy video scraper =====
+// ===== Video scraper =====
 
 app.get("/play/:hash/:id", async (req, res) => {
 
@@ -18,7 +18,7 @@ app.get("/play/:hash/:id", async (req, res) => {
     const { hash, id } = req.params
 
     const page =
-      `https://www.hellspy.to/video/${hash}/${id}`
+       `https://www.hellspy.to/video/${hash}/${id}`
 
     console.log("SCRAPE PAGE:", page)
 
@@ -43,7 +43,6 @@ app.get("/play/:hash/:id", async (req, res) => {
 
     console.log("VIDEO STREAM:", videoSrc)
 
-    // redirect na skutečný video stream
     res.redirect(videoSrc)
 
   } catch (err) {
@@ -58,15 +57,18 @@ app.get("/play/:hash/:id", async (req, res) => {
 
 // ===== Stremio addon server =====
 
-serveHTTP(addonInterface, { app })
+// FIX: Odstraněno duplicitní volání app.listen()
+// serveHTTP() ze Stremio SDK interně volá app.listen() samo,
+// pokud mu předáme vlastní `app`. Dvojité volání způsobovalo
+// chybu "listen EADDRINUSE" nebo naslouchání na špatném portu.
+//
+// serveHTTP přijímá { app, port } — SDK pak spustí server na správném portu
+// a přidá vlastní middleware (manifest.json, cors atd.)
 
-// start server
-app.listen(port, () => {
+serveHTTP(addonInterface, { app, port })
 
-  console.log("================================")
-  console.log("HellSpy addon running")
-  console.log("Port:", port)
-  console.log("Manifest:", `http://localhost:${port}/manifest.json`)
-  console.log("================================")
-
-})
+console.log("================================")
+console.log("Hellspy addon running")
+console.log("Port:", port)
+console.log("Manifest:", `http://localhost:${port}/manifest.json`)
+console.log("================================")
