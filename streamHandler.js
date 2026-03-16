@@ -1,8 +1,9 @@
-const { parseVideoTitle } = require("./parser")
-
-async function streamHandler({ id }, { fetchProxy }) {
+builder.defineStreamHandler(async ({ id }) => {
 
   console.log("STREAM REQUEST:", id)
+
+  if (!id.startsWith("hs_"))
+    return { streams: [] }
 
   const videoId = id.replace("hs_", "")
 
@@ -39,6 +40,4 @@ async function streamHandler({ id }, { fetchProxy }) {
 
   }
 
-}
-
-module.exports = streamHandler
+})
