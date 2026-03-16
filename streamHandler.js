@@ -50,14 +50,12 @@ builder.defineStreamHandler(async ({ id }) => {
       const url =
         `https://www.hellspy.to/video/${v.fileHash}/${v.id}`
 
-      return {
-        name: "HellSpy",
-        title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
-        externalUrl: url,
-        behaviorHints: {
-          bingeGroup: "hellspy"
-        }
-      }
+     return {
+      name: "HellSpy",
+      title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
+      externalUrl:
+      `https://stremio-lumir.onrender.com/play/${v.fileHash}/${v.id}`
+    }
 
     })
 
