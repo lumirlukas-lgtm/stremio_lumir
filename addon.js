@@ -299,18 +299,13 @@ builder.defineStreamHandler(async ({ id }) => {
   console.log("REQUEST ID:", id)
 
   if (!id.startsWith("hs_")) {
-    console.log("INVALID ID (NOT HS):", id)
+    console.log("INVALID ID:", id)
     return { streams: [] }
   }
-
-  const videoId = id.replace("hs_", "")
-  console.log("VIDEO ID:", videoId)
 
   const streams = []
 
   for (const [key, value] of cache.entries()) {
-
-    console.log("CHECK CACHE KEY:", key)
 
     if (!key.startsWith("search_")) continue
 
@@ -318,8 +313,7 @@ builder.defineStreamHandler(async ({ id }) => {
 
     for (const item of items) {
 
-      console.log("STREAM FOUND IN CACHE:", item.id)
-      console.log("FILE HASH:", item.fileHash)
+      console.log("PROCESS ITEM:", item.id)
 
       const parsed = parseVideoTitle(item.title)
 
@@ -341,23 +335,24 @@ builder.defineStreamHandler(async ({ id }) => {
         audio.includes("SK") ? "🇸🇰" :
         audio.includes("EN") ? "🇬🇧" : ""
 
-      const playUrl =
-        `https://stremio-lumir.onrender.com/play/${item.fileHash}/${item.id}`
+      const cdnUrl =
+        await getCDNUrl(item.fileHash, item.id)
 
-      console.log("RETURN STREAM:", playUrl)
+      if (!cdnUrl) {
+        console.log("CDN NOT FOUND:", item.id)
+        continue
+      }
+
+      console.log("CDN URL:", cdnUrl)
 
       streams.push({
         name: `HellSpy ${resolution}`,
         description: `${parsed.title || item.title}`,
         title: `${flags} ${resolution} ${audio} ${ext} 💾${sizeGB}GB`,
-        url: playUrl
+        url: cdnUrl
       })
-    }
-  }
 
-  if (!streams.length) {
-    console.log("STREAM NOT FOUND IN CACHE")
-    return { streams: [] }
+    }
   }
 
   console.log("STREAMS RETURNED:", streams.length)
