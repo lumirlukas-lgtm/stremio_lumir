@@ -239,11 +239,12 @@ builder.defineMetaHandler(async ({ id }) => {
 builder.defineStreamHandler(async ({ id }) => {
 
   console.log("================================")
-  console.log("STREAM REQUEST:", id)
+  console.log("STREAM HANDLER CALLED")
+  console.log("REQUEST ID:", id)
 
   if (!id.startsWith("hs_")) {
 
-    console.log("NOT HS ID:", id)
+    console.log("INVALID ID (NOT HS):", id)
 
     return { streams: [] }
 
@@ -251,15 +252,23 @@ builder.defineStreamHandler(async ({ id }) => {
 
   const videoId = id.replace("hs_", "")
 
+  console.log("VIDEO ID:", videoId)
+
   for (const [key, value] of cache.entries()) {
+
+    console.log("CHECK CACHE KEY:", key)
 
     if (!key.startsWith("search_")) continue
 
     const item = value.data.find(v => `hs_${v.id}` === id)
 
-    if (!item) continue
+    if (!item) {
+      console.log("NOT FOUND IN CACHE KEY:", key)
+      continue
+    }
 
     console.log("STREAM FOUND IN CACHE:", item.id)
+    console.log("FILE HASH:", item.fileHash)
 
     const parsed = parseVideoTitle(item.title)
 
@@ -267,75 +276,25 @@ builder.defineStreamHandler(async ({ id }) => {
       ? (item.size / 1024 / 1024 / 1024).toFixed(1)
       : "?"
 
+    const playUrl =
+      `https://stremio-lumir.onrender.com/play/${item.fileHash}/${item.id}`
+
+    console.log("RETURNING STREAM URL:", playUrl)
+
     return {
-  streams: [{
-    name: "HellSpy",
-    description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
-    title: `💾${sizeGB}GB`,
-    url: `https://stremio-lumir.onrender.com/play/${item.fileHash}/${item.id}`
-  }]
-}
-
-  }
-
-  console.log("STREAM NOT IN CACHE, fetching from API...")
-
-  try {
-
-    const videoData = await fetchProxy(
-      `https://api.hellspy.to/gw/video/${videoId}`
-    )
-
-    if (!videoData || !videoData.title) {
-      console.log("VIDEO DATA MISSING")
-      return { streams: [] }
+      streams: [{
+        name: "HellSpy",
+        description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
+        title: `💾${sizeGB}GB`,
+        url: playUrl
+      }]
     }
 
-    const parsedVideo = parseVideoTitle(videoData.title)
-
-    const query =
-      `${parsedVideo.title || parsedVideo.series} ${parsedVideo.year || ""}`.trim()
-
-    console.log("SEARCH FOR STREAMS:", query)
-
-    const searchData = await fetchProxy(
-  `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=20`
-)
-    const results = searchData.items || []
-
-    console.log("STREAM SEARCH RESULTS:", results.length)
-
-    const streams = results
-      .filter(v => v.fileHash && v.id)
-      .map(v => {
-
-        const parsed = parseVideoTitle(v.title)
-
-        const sizeGB = v.size
-          ? (v.size / 1024 / 1024 / 1024).toFixed(1)
-          : "?"
-
-        return {
-          name: "HellSpy",
-          description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
-          title: `💾${sizeGB}GB`,
-          url: `https://stremio-lumir.onrender.com/play/${v.fileHash}/${v.id}`
-        }
-
-      })
-
-    console.log("STREAMS RETURNED:", streams.length)
-
-    return { streams }
-
-  } catch (err) {
-
-    console.log("STREAM ERROR:", err.message)
-
-    return { streams: [] }
-
   }
 
-})
+  console.log("STREAM NOT FOUND IN CACHE")
 
+  return { streams: [] }
+
+})
 module.exports = builder.getInterface()
