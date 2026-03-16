@@ -1,55 +1,68 @@
-const axios = require("axios");
-const cheerio = require("cheerio");
-const { parseVideoTitle } = require("./parser");
+const axios = require("axios")
+const { parseVideoTitle } = require("./parser")
 
-async function streamHandler({ id }, { fetchProxy, fetchHtml }) {
+async function streamHandler({ id }, { fetchProxy }) {
 
-  console.log("STREAM REQUEST:", id);
-
-  const videoId = id.replace("hs_", "");
-
-  const pageUrl = `https://hellspy.to/video/${videoId}`;
+  console.log("STREAM REQUEST:", id)
 
   try {
 
-    const html = await fetchHtml(pageUrl);
+    // získáme název filmu z Cinemeta
+    const meta = await axios.get(
+      `https://v3-cinemeta.strem.io/meta/movie/${id}.json`
+    )
 
-    const $ = cheerio.load(html);
+    const title = meta.data.meta.name
 
-    const streams = [];
+    console.log("MOVIE TITLE:", title)
 
-    $("video source, video").each((i, el) => {
+    // Hellspy search
+    const apiUrl =
+      `https://api.hellspy.to/gw/search?query=${encodeURIComponent(title)}&limit=20`
 
-      const src = $(el).attr("src") || $(el).attr("data-src");
+    const data = await fetchProxy(apiUrl)
 
-      if (!src) return;
+    const results = data.items || []
 
-      if (src.includes(".mp4") || src.includes(".m3u8")) {
+    const streams = results.map(v => {
 
-        streams.push({
-          title: `HellSpy Stream ${i + 1}`,
-          url: src.startsWith("http") ? src : `https://hellspy.to${src}`,
-          behaviorHints: {
-            bingeGroup: "hellspy"
-          }
-        });
+      const parsed = parseVideoTitle(v.title)
+
+      const sizeGB = v.size
+        ? (v.size / 1024 / 1024 / 1024).toFixed(1)
+        : "?"
+
+      return {
+
+        name: "HellSpy",
+
+        title:
+          `${parsed.quality || ""} ` +
+          `${parsed.audio?.join("-") || ""} ` +
+          `💾${sizeGB}GB`,
+
+        externalUrl: `https://hellspy.to/video/${v.id}`,
+
+        behaviorHints: {
+          bingeGroup: "hellspy"
+        }
 
       }
 
-    });
+    })
 
-    console.log("STREAMS FOUND:", streams.length);
+    console.log("STREAMS:", streams.length)
 
-    return { streams };
+    return { streams }
 
   } catch (err) {
 
-    console.error("STREAM ERROR:", err.message);
+    console.log("STREAM ERROR:", err.message)
 
-    return { streams: [] };
+    return { streams: [] }
 
   }
 
 }
 
-module.exports = streamHandler;
+module.exports = streamHandler
