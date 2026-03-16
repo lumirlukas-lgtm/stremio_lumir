@@ -58,10 +58,8 @@ async function fetchProxy(url) {
   const cached = getCache(url);
   if (cached) return cached;
 
-  const proxies = [
-  `https://thingproxy.freeboard.io/fetch/${url}`,
-  `https://corsproxy.io/?${url}`,
-  `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+const proxies = [
+  `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
   url
 ];
 
@@ -103,10 +101,8 @@ async function fetchProxy(url) {
 
 async function fetchHtml(url) {
 
-  const proxies = [
-  `https://thingproxy.freeboard.io/fetch/${url}`,
-  `https://corsproxy.io/?${url}`,
-  `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+const proxies = [
+  `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
   url
 ];
 
