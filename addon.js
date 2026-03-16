@@ -185,8 +185,11 @@ builder.defineMetaHandler(async ({ id }) => {
           type: "movie",
           name: parsed.title || item.title,
           poster: item.thumbs?.[0] || "",
-          description: "",
-          year: parsed.year || null
+          year: parsed.year || null,
+      
+          behaviorHints: {
+            defaultVideoId: id
+          }
         }
       }
 
