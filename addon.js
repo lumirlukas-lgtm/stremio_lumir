@@ -247,22 +247,19 @@ builder.defineMetaHandler(async ({ id }) => {
 
 builder.defineStreamHandler(async ({ id }) => {
 
-
   console.log("================================")
   console.log("STREAM HANDLER CALLED")
   console.log("REQUEST ID:", id)
 
   if (!id.startsWith("hs_")) {
-
     console.log("INVALID ID (NOT HS):", id)
-
     return { streams: [] }
-
   }
 
   const videoId = id.replace("hs_", "")
-
   console.log("VIDEO ID:", videoId)
+
+  const streams = []
 
   for (const [key, value] of cache.entries()) {
 
@@ -270,41 +267,55 @@ builder.defineStreamHandler(async ({ id }) => {
 
     if (!key.startsWith("search_")) continue
 
-    const item = value.data.find(v => `hs_${v.id}` === id)
+    const items = value.data.filter(v => `hs_${v.id}` === id)
 
-    if (!item) {
-      console.log("NOT FOUND IN CACHE KEY:", key)
-      continue
-    }
+    for (const item of items) {
 
-    console.log("STREAM FOUND IN CACHE:", item.id)
-    console.log("FILE HASH:", item.fileHash)
+      console.log("STREAM FOUND IN CACHE:", item.id)
+      console.log("FILE HASH:", item.fileHash)
 
-    const parsed = parseVideoTitle(item.title)
+      const parsed = parseVideoTitle(item.title)
 
-    const sizeGB = item.size
-      ? (item.size / 1024 / 1024 / 1024).toFixed(1)
-      : "?"
+      const sizeGB = item.size
+        ? (item.size / 1024 / 1024 / 1024).toFixed(1)
+        : "?"
 
-    const playUrl =
-      `https://stremio-lumir.onrender.com/play/${item.fileHash}/${item.id}`
+      const ext =
+        item.title?.match(/\.(mkv|mp4|avi)/i)?.[1]?.toUpperCase() || "VIDEO"
 
-    console.log("RETURNING STREAM URL:", playUrl)
+      const resolution =
+        parsed.quality?.toUpperCase() || "SD"
 
-    return {
-      streams: [{
-        name: "HellSpy",
-        description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
-        title: `💾${sizeGB}GB`,
+      const audio =
+        parsed.audio?.join("-") || "?"
+
+      const flags =
+        audio.includes("CZ") ? "🇨🇿" :
+        audio.includes("SK") ? "🇸🇰" :
+        audio.includes("EN") ? "🇬🇧" : ""
+
+      const playUrl =
+        `https://stremio-lumir.onrender.com/play/${item.fileHash}/${item.id}`
+
+      console.log("RETURN STREAM:", playUrl)
+
+      streams.push({
+        name: `HellSpy ${resolution}`,
+        description: `${parsed.title || item.title}`,
+        title: `${flags} ${resolution} ${audio} ${ext} 💾${sizeGB}GB`,
         url: playUrl
-      }]
+      })
     }
-
   }
 
-  console.log("STREAM NOT FOUND IN CACHE")
+  if (!streams.length) {
+    console.log("STREAM NOT FOUND IN CACHE")
+    return { streams: [] }
+  }
 
-  return { streams: [] }
+  console.log("STREAMS RETURNED:", streams.length)
+
+  return { streams }
 
 })
 module.exports = builder.getInterface()
