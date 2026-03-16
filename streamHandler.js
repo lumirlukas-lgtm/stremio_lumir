@@ -1,59 +1,44 @@
-const axios = require("axios")
 const { parseVideoTitle } = require("./parser")
 
 async function streamHandler({ id }, { fetchProxy }) {
 
   console.log("STREAM REQUEST:", id)
 
+  const videoId = id.replace("hs_", "")
+
   try {
 
-    // získáme název filmu z Cinemeta
-    const meta = await axios.get(
-      `https://v3-cinemeta.strem.io/meta/movie/${id}.json`
-    )
+    const url = `https://api.hellspy.to/gw/video/${videoId}`
 
-    const title = meta.data.meta.name
+    const data = await fetchProxy(url)
 
-    console.log("MOVIE TITLE:", title)
+    const parsed = parseVideoTitle(data.title || "")
 
-    // Hellspy search
-    const apiUrl =
-      `https://api.hellspy.to/gw/search?query=${encodeURIComponent(title)}&limit=20`
+    const sizeGB = data.size
+      ? (data.size / 1024 / 1024 / 1024).toFixed(1)
+      : "?"
 
-    const data = await fetchProxy(apiUrl)
+    const stream = {
 
-    const results = data.items || []
+      name: "HellSpy",
 
-    const streams = results.map(v => {
+      title:
+        `${parsed.quality || ""} ` +
+        `${parsed.audio?.join("-") || ""} ` +
+        `💾${sizeGB}GB`,
 
-      const parsed = parseVideoTitle(v.title)
+      externalUrl:
+        `https://www.hellspy.to/video/${data.fileHash}/${data.id}`,
 
-      const sizeGB = v.size
-        ? (v.size / 1024 / 1024 / 1024).toFixed(1)
-        : "?"
-
-      return {
-
-        name: "HellSpy",
-
-        title:
-          `${parsed.quality || ""} ` +
-          `${parsed.audio?.join("-") || ""} ` +
-          `💾${sizeGB}GB`,
-
-        externalUrl: `https://hellspy.to/video/${v.id}`,
-
-        behaviorHints: {
-          bingeGroup: "hellspy"
-        }
-
+      behaviorHints: {
+        bingeGroup: "hellspy"
       }
 
-    })
+    }
 
-    console.log("STREAMS:", streams.length)
+    console.log("STREAM READY")
 
-    return { streams }
+    return { streams: [stream] }
 
   } catch (err) {
 
