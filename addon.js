@@ -349,7 +349,7 @@ builder.defineStreamHandler(async ({ id }) => {
         name: `HellSpy ${resolution}`,
         description: `${parsed.title || item.title}`,
         title: `${flags} ${resolution} ${audio} ${ext} 💾${sizeGB}GB`,
-        url: cdnUrl
+        externalUrl: `https://hellspy.to/video/${item.fileHash}/${item.id}`
       })
 
     }
