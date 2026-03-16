@@ -4,10 +4,13 @@ const express = require("express")
 const axios = require("axios")
 const cheerio = require("cheerio")
 
-const app = express()
 const port = process.env.PORT || 7000
 
-serveHTTP(addonInterface, { app })
+// Stremio addon server
+serveHTTP(addonInterface, { port })
+
+// Express pro scraper
+const app = express()
 
 app.get("/play/:hash/:id", async (req,res)=>{
 
@@ -45,6 +48,6 @@ app.get("/play/:hash/:id", async (req,res)=>{
 
 })
 
-app.listen(port,()=>{
-  console.log("Server running:",port)
+app.listen(port+1,()=>{
+  console.log("Scraper running:",port+1)
 })
