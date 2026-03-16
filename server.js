@@ -4,50 +4,69 @@ const express = require("express")
 const axios = require("axios")
 const cheerio = require("cheerio")
 
-const port = process.env.PORT || 7000
+const port = Number(process.env.PORT) || 7000
 
-// Stremio addon server
-serveHTTP(addonInterface, { port })
-
-// Express pro scraper
+// Express server
 const app = express()
 
-app.get("/play/:hash/:id", async (req,res)=>{
+// ===== HellSpy video scraper =====
 
-  try{
+app.get("/play/:hash/:id", async (req, res) => {
+
+  try {
+
+    const { hash, id } = req.params
 
     const page =
-      `https://www.hellspy.to/video/${req.params.hash}/${req.params.id}`
+      `https://www.hellspy.to/video/${hash}/${id}`
 
-    console.log("SCRAPE:",page)
+    console.log("SCRAPE PAGE:", page)
 
-    const html = await axios.get(page,{
-      headers:{
-        "User-Agent":"Mozilla/5.0"
+    const html = await axios.get(page, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://hellspy.to/"
       }
     })
 
     const $ = cheerio.load(html.data)
 
-    const src = $("video").attr("src")
+    const videoSrc = $("video").attr("src")
 
-    if(!src){
+    if (!videoSrc) {
+
+      console.log("VIDEO SRC NOT FOUND")
+
       return res.status(404).send("video not found")
+
     }
 
-    console.log("VIDEO STREAM:",src)
+    console.log("VIDEO STREAM:", videoSrc)
 
-    res.redirect(src)
+    // redirect na skutečný video stream
+    res.redirect(videoSrc)
 
-  }catch(e){
+  } catch (err) {
 
-    console.log("SCRAPE ERROR:",e.message)
+    console.log("SCRAPER ERROR:", err.message)
+
     res.status(500).send("error")
 
   }
 
 })
 
-app.listen(port+1,()=>{
-  console.log("Scraper running:",port+1)
+// ===== Stremio addon server =====
+
+serveHTTP(addonInterface, { app })
+
+// start server
+app.listen(port, () => {
+
+  console.log("================================")
+  console.log("HellSpy addon running")
+  console.log("Port:", port)
+  console.log("Manifest:", `http://localhost:${port}/manifest.json`)
+  console.log("================================")
+
 })
