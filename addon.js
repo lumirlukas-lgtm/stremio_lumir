@@ -84,8 +84,17 @@ async function fetchProxy(url) {
         timeout: 20000,
         validateStatus: () => true,
         headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept": "*/*"
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+      
+          "Accept":
+            "application/json, text/plain, */*",
+      
+          "Accept-Language":
+            "en-US,en;q=0.9",
+      
+          "Referer":
+            "https://hellspy.to/"
         }
       });
 
@@ -142,11 +151,22 @@ async function fetchHtml(url) {
       console.log("TRY HTML PROXY:", proxy);
 
       const res = await axios.get(proxy, {
-        timeout: 20000,
-        headers: {
-          "User-Agent": "Mozilla/5.0"
-        }
-      });
+      timeout: 20000,
+      validateStatus: () => true,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+    
+        "Accept":
+          "application/json, text/plain, */*",
+    
+        "Accept-Language":
+          "en-US,en;q=0.9",
+    
+        "Referer":
+          "https://hellspy.to/"
+      }
+    });
 
       console.log("HTML STATUS:", res.status);
 
