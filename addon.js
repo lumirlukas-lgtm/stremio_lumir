@@ -326,8 +326,7 @@ builder.defineStreamHandler(async ({ id }) => {
           name: "HellSpy",
           description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
           title: `💾${sizeGB}GB`,
-          externalUrl:
-            `https://stremio-lumir.onrender.com/play/${v.fileHash}/${v.id}`
+          url: `https://stremio-lumir.onrender.com/play/${v.fileHash}/${v.id}`
         }
 
       })
