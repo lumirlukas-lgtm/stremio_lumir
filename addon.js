@@ -267,12 +267,7 @@ builder.defineStreamHandler(async ({ id }) => {
       ? (item.size / 1024 / 1024 / 1024).toFixed(1)
       : "?"
 
-    const url =
-      `https://hellspy.to/video/${item.fileHash}/${item.id}`
-
-    console.log("STREAM URL:", url)
-
-   return {
+    return {
   streams: [{
     name: "HellSpy",
     description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
