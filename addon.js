@@ -71,21 +71,21 @@ async function fetchProxy(url) {
   if (cached) return cached;
 
   const proxies = [
-    `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
-    url
+    `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`
   ];
 
   for (const proxy of proxies) {
 
     try {
 
-      console.log("TRY PROXY:", proxy);
+      console.log("TRY:", proxy);
 
       const res = await axios.get(proxy, {
         timeout: 20000,
+        validateStatus: () => true,
         headers: {
           "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json"
+          "Accept": "*/*"
         }
       });
 
@@ -94,21 +94,18 @@ async function fetchProxy(url) {
       let data = res.data;
 
       if (typeof data === "string") {
-
-        console.log("STRING RESPONSE LENGTH:", data.length);
-
+        console.log("STRING RESPONSE:", data.slice(0,200));
         try {
           data = JSON.parse(data);
-          console.log("JSON PARSED OK");
-        } catch (err) {
-          console.log("JSON PARSE FAIL");
-        }
-
+        } catch {}
       }
 
-      if (!data) {
-        throw new Error("Empty API response");
+      if (!data || !data.items) {
+        console.log("INVALID DATA STRUCTURE");
+        continue;
       }
+
+      console.log("ITEMS:", data.items.length);
 
       setCache(url, data);
 
@@ -116,8 +113,7 @@ async function fetchProxy(url) {
 
     } catch (e) {
 
-      console.log("PROXY FAIL:", proxy);
-      console.log("ERROR:", e.message);
+      console.log("PROXY ERROR:", e.message);
 
     }
 
@@ -126,7 +122,6 @@ async function fetchProxy(url) {
   throw new Error("All proxies failed");
 
 }
-
 
 
 // ---------------- FETCH HTML ----------------
