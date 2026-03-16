@@ -9,10 +9,10 @@ const manifest = {
   version: "1.0.22",
   name: "HellSpy",
   description: "Search addon",
-  resources: ["catalog", "meta", "stream"],
-  types: ["movie"],
 
-  idPrefixes: ["hs_"],   // ⭐ důležité
+  resources: ["catalog","meta","stream"],
+  types: ["movie"],
+  idPrefixes: ["hs_"],
 
   catalogs: [
     {
@@ -138,7 +138,10 @@ builder.defineCatalogHandler(async ({ extra }) => {
         id: `hs_${v.id}`,
         type: "movie",
         name: parsed.title || parsed.series || v.title,
-        poster: v.thumbs?.[0] || ""
+        poster: v.thumbs?.[0] || "",
+        behaviorHints: {
+          defaultVideoId: `hs_${v.id}`
+        }
       }
 
     })
