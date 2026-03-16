@@ -12,7 +12,11 @@ const app = express()
 // ===== Video scraper =====
 
 app.get("/play/:hash/:id", async (req, res) => {
+  const { hash, id } = req.params
 
+  console.log("PLAY ENDPOINT CALLED")
+  console.log("HASH:", hash)
+  console.log("ID:", id)
   try {
 
     const { hash, id } = req.params
@@ -118,8 +122,4 @@ console.log("Port:", port)
 console.log("Manifest:", `http://localhost:${port}/manifest.json`)
 console.log("================================")
 
-const { hash, id } = req.params
 
-console.log("PLAY ENDPOINT CALLED")
-console.log("HASH:", hash)
-console.log("ID:", id)
