@@ -51,19 +51,37 @@ app.get("/play/:hash/:id", async (req, res) => {
     if (!videoSrc)
       return res.status(404).send("video not found")
 
+    const range = req.headers.range
+
+    const headers = {
+      "User-Agent": "Mozilla/5.0",
+      "Referer": "https://hellspy.to/",
+      "Origin": "https://hellspy.to"
+    }
+    
+    if (range) headers.Range = range
+    
     const videoRes = await axios.get(videoSrc, {
       responseType: "stream",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://hellspy.to/",
-        "Origin": "https://hellspy.to"
-      }
+      headers
     })
 
-    res.set("Content-Type", videoRes.headers["content-type"])
+    res.status(videoRes.status)
+
+    if (videoRes.headers["content-type"])
+      res.set("Content-Type", videoRes.headers["content-type"])
+    
+    if (videoRes.headers["content-length"])
+      res.set("Content-Length", videoRes.headers["content-length"])
+    
+    if (videoRes.headers["content-range"])
+      res.set("Content-Range", videoRes.headers["content-range"])
+    
     res.set("Accept-Ranges", "bytes")
 
-    videoRes.data.pipe(res)
+    req.on("close", () => {
+      videoRes.data.destroy()
+    })
 
   } catch (err) {
 
