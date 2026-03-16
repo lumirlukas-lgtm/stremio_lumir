@@ -1,6 +1,5 @@
 const { addonBuilder } = require("stremio-addon-sdk")
 const axios = require("axios")
-const cheerio = require("cheerio")
 const { parseVideoTitle } = require("./parser")
 
 console.log("STARTING HellSpy addon v1.0.22")
@@ -65,7 +64,8 @@ async function fetchProxy(url) {
   const cached = getCache(url)
   if (cached) return cached
 
-  const proxy = `https://pechal.cz/hellproxy/?url=${encodeURIComponent(url)}`
+  const proxy =
+    `https://pechal.cz/hellproxy/?url=${encodeURIComponent(url)}`
 
   try {
 
@@ -99,42 +99,6 @@ async function fetchProxy(url) {
     throw new Error("Proxy fetch failed")
 
   }
-
-}
-
-// ================= FETCH HTML =================
-
-async function fetchHtml(url) {
-
-  console.log("FETCH HTML:", url)
-
-  const proxy = `https://pechal.cz/hellproxy/?url=${encodeURIComponent(url)}`
-
-  try {
-
-    const res = await axios.get(proxy, {
-      timeout: 20000,
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://hellspy.to/"
-      }
-    })
-
-    if (typeof res.data === "string") {
-
-      console.log("HTML SIZE:", res.data.length)
-
-      return res.data
-
-    }
-
-  } catch (e) {
-
-    console.log("HTML FETCH ERROR:", e.message)
-
-  }
-
-  throw new Error("HTML fetch failed")
 
 }
 
@@ -241,54 +205,58 @@ builder.defineMetaHandler(async ({ id }) => {
 
 builder.defineStreamHandler(async ({ id }) => {
 
+  console.log("================================")
   console.log("STREAM REQUEST:", id)
 
   if (!id.startsWith("hs_")) {
-    console.log("INVALID STREAM ID")
+
+    console.log("NOT HELLSYP ID:", id)
+
     return { streams: [] }
+
   }
 
   const videoId = id.replace("hs_", "")
 
-  try {
+  for (const [key, value] of cache.entries()) {
 
-    const data = await fetchProxy(
-      `https://api.hellspy.to/gw/video/${videoId}`
-    )
+    if (!key.startsWith("search_")) continue
 
-    if (!data || !data.id) {
-      console.log("VIDEO DATA NOT FOUND")
-      return { streams: [] }
-    }
+    const item = value.data.find(v => `hs_${v.id}` === id)
 
-    const parsed = parseVideoTitle(data.title || "")
+    if (!item) continue
 
-    const sizeGB = data.size
-      ? (data.size / 1024 / 1024 / 1024).toFixed(1)
+    console.log("STREAM FOUND:", item.id)
+
+    const parsed = parseVideoTitle(item.title)
+
+    const sizeGB = item.size
+      ? (item.size / 1024 / 1024 / 1024).toFixed(1)
       : "?"
 
-    const stream = {
-      name: "HellSpy",
-      title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
-      externalUrl: `https://www.hellspy.to/video/${data.fileHash}/${data.id}`,
-      behaviorHints: {
-        bingeGroup: "hellspy"
-      }
+    const url =
+      `https://www.hellspy.to/video/${item.fileHash}/${item.id}`
+
+    console.log("STREAM URL:", url)
+
+    return {
+      streams: [{
+        name: "HellSpy",
+        title:
+          `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
+        externalUrl: url,
+        behaviorHints: {
+          bingeGroup: "hellspy"
+        }
+      }]
     }
 
-    console.log("STREAM READY")
-
-    return { streams: [stream] }
-
-  } catch (err) {
-
-    console.log("STREAM ERROR:", err.message)
-
-    return { streams: [] }
-
   }
+
+  console.log("STREAM NOT FOUND IN CACHE")
+
+  return { streams: [] }
 
 })
 
 module.exports = builder.getInterface()
-
