@@ -5,39 +5,46 @@ builder.defineStreamHandler(async ({ id }) => {
   if (!id.startsWith("hs_"))
     return { streams: [] }
 
-  const videoId = id.replace("hs_", "")
+  for (const [key, value] of cache.entries()) {
 
-  try {
+    if (!key.startsWith("search_")) continue
 
-    const data = await fetchProxy(
-      `https://api.hellspy.to/gw/video/${videoId}`
-    )
+    const item = value.data.find(v => `hs_${v.id}` === id)
 
-    const parsed = parseVideoTitle(data.title || "")
+    if (!item) continue
 
-    const sizeGB = data.size
-      ? (data.size / 1024 / 1024 / 1024).toFixed(1)
+    const parsed = parseVideoTitle(item.title)
+
+    const sizeGB = item.size
+      ? (item.size / 1024 / 1024 / 1024).toFixed(1)
       : "?"
 
     const stream = {
+
       name: "HellSpy",
-      title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
-      externalUrl: `https://www.hellspy.to/video/${data.fileHash}/${data.id}`,
+
+      title:
+        `${parsed.quality || ""} ` +
+        `${parsed.audio?.join("-") || ""} ` +
+        `💾${sizeGB}GB`,
+
+      externalUrl:
+        `https://www.hellspy.to/video/${item.fileHash}/${item.id}`,
+
       behaviorHints: {
         bingeGroup: "hellspy"
       }
+
     }
 
     console.log("STREAM READY")
 
     return { streams: [stream] }
 
-  } catch (err) {
-
-    console.log("STREAM ERROR:", err.message)
-
-    return { streams: [] }
-
   }
+
+  console.log("STREAM NOT FOUND IN CACHE")
+
+  return { streams: [] }
 
 })
