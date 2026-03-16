@@ -71,7 +71,7 @@ async function fetchProxy(url) {
   if (cached) return cached;
 
   const proxies = [
-    `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`
+    `https://pechal.cz/hellproxy/?url=${encodeURIComponent(url)}`
   ];
 
   for (const proxy of proxies) {
@@ -140,7 +140,7 @@ async function fetchHtml(url) {
   console.log("FETCH HTML:", url);
 
   const proxies = [
-    `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
+    `https://pechal.cz/hellproxy/?url=${encodeURIComponent(url)}`,
     url
   ];
 
