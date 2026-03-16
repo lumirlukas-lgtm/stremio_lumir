@@ -11,6 +11,9 @@ const manifest = {
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
   types: ["movie"],
+
+  idPrefixes: ["hs_"],   // ⭐ důležité
+
   catalogs: [
     {
       type: "movie",
@@ -237,6 +240,7 @@ builder.defineMetaHandler(async ({ id }) => {
 // ================= STREAM =================
 
 builder.defineStreamHandler(async ({ id }) => {
+
 
   console.log("================================")
   console.log("STREAM HANDLER CALLED")
