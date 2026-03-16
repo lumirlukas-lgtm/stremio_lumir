@@ -1,107 +1,76 @@
 builder.defineStreamHandler(async ({ id }) => {
 
   console.log("================================")
-  console.log("STREAM HANDLER START")
-  console.log("REQUEST ID:", id)
-
-  if (!id) {
-    console.log("ERROR: ID je undefined")
-    return { streams: [] }
-  }
+  console.log("STREAM REQUEST:", id)
 
   if (!id.startsWith("hs_")) {
-
-    console.log("ID není HellSpy:", id)
-    console.log("Pravděpodobně IMDb nebo jiný addon")
-
+    console.log("NOT HELLSYP ID:", id)
     return { streams: [] }
   }
 
   const videoId = id.replace("hs_", "")
 
-  console.log("PARSED VIDEO ID:", videoId)
+  try {
 
-  console.log("CACHE SIZE:", cache.size)
+    // zjistíme název filmu
+    const videoData = await fetchProxy(
+      `https://api.hellspy.to/gw/video/${videoId}`
+    )
 
-  for (const [key, value] of cache.entries()) {
+    if (!videoData || !videoData.title) {
 
-    console.log("----")
-    console.log("CHECK CACHE KEY:", key)
-
-    if (!key.startsWith("search_")) {
-      console.log("SKIP - není search cache")
-      continue
-    }
-
-    console.log("CACHE ITEMS:", value.data.length)
-
-    const item = value.data.find(v => `hs_${v.id}` === id)
-
-    if (!item) {
-
-      console.log("ITEM NOT FOUND IN:", key)
-
-      continue
-    }
-
-    console.log("ITEM FOUND!")
-    console.log("ITEM ID:", item.id)
-    console.log("ITEM TITLE:", item.title)
-
-    console.log("RAW FILE HASH:", item.fileHash)
-
-    if (!item.fileHash) {
-
-      console.log("ERROR: FILE HASH CHYBÍ")
-
-      console.log("FULL ITEM OBJECT:")
-      console.log(JSON.stringify(item, null, 2))
-
+      console.log("VIDEO DATA MISSING")
       return { streams: [] }
+
     }
 
-    const parsed = parseVideoTitle(item.title)
+    const parsed = parseVideoTitle(videoData.title)
 
-    console.log("PARSED TITLE:", parsed.title || parsed.series)
+    const query =
+      `${parsed.title || parsed.series} ${parsed.year || ""}`.trim()
 
-    const sizeGB = item.size
-      ? (item.size / 1024 / 1024 / 1024).toFixed(1)
-      : "?"
+    console.log("SEARCH AGAIN:", query)
 
-    console.log("FILE SIZE GB:", sizeGB)
+    const searchData = await fetchProxy(
+      `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=20`
+    )
 
-    console.log("BUILDING URL...")
+    const results = searchData.items || []
 
-    const base = "https://www.hellspy.to/video"
+    console.log("STREAM RESULTS:", results.length)
 
-    console.log("BASE URL:", base)
-    console.log("FILE HASH:", item.fileHash)
-    console.log("VIDEO ID:", item.id)
+    const streams = results.map(v => {
 
-    const url =
-      `${base}/${item.fileHash}/${item.id}`
+      const parsed = parseVideoTitle(v.title)
 
-    console.log("FINAL STREAM URL:")
-    console.log(url)
+      const sizeGB = v.size
+        ? (v.size / 1024 / 1024 / 1024).toFixed(1)
+        : "?"
 
-    return {
-      streams: [{
+      const url =
+        `https://www.hellspy.to/video/${v.fileHash}/${v.id}`
+
+      return {
         name: "HellSpy",
         title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
         externalUrl: url,
         behaviorHints: {
           bingeGroup: "hellspy"
         }
-      }]
-    }
+      }
+
+    })
+
+    console.log("STREAMS RETURNED:", streams.length)
+
+    return { streams }
+
+  } catch (err) {
+
+    console.log("STREAM ERROR:", err.message)
+
+    return { streams: [] }
 
   }
-
-  console.log("================================")
-  console.log("STREAM NOT FOUND IN CACHE")
-  console.log("CACHE KEYS:", [...cache.keys()])
-  console.log("================================")
-
-  return { streams: [] }
 
 })
