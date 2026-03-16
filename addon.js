@@ -85,6 +85,7 @@ async function fetchProxy(url) {
     }
 
     if (!data) {
+      console.log("EMPTY RESPONSE")
       throw new Error("Empty response")
     }
 
@@ -95,7 +96,7 @@ async function fetchProxy(url) {
   } catch (e) {
 
     console.log("FETCH ERROR:", e.message)
-    throw e
+    throw new Error("Proxy fetch failed")
 
   }
 
