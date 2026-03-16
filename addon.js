@@ -242,6 +242,53 @@ builder.defineMetaHandler(async ({ id }) => {
 
 })
 
+async function getCDNUrl(hash, id) {
+
+  const page =
+    `https://pechal.cz/hellproxy/?url=${encodeURIComponent(
+      `https://www.hellspy.to/video/${hash}/${id}`
+    )}`
+
+  try {
+
+    const html = await axios.get(page, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    })
+
+    const data = html.data
+
+    // <source src="...">
+    const sourceMatch =
+      data.match(/<source[^>]+src="([^"]+)"/i)
+
+    if (sourceMatch)
+      return sourceMatch[1]
+
+    // video_url = "...";
+    const jsMatch =
+      data.match(/video[_-]?url["']?\s*[:=]\s*["']([^"']+)/i)
+
+    if (jsMatch)
+      return jsMatch[1]
+
+    // fallback storage link
+    const cdnMatch =
+      data.match(/https:\/\/storage[^\s"']+/i)
+
+    if (cdnMatch)
+      return cdnMatch[0]
+
+    return null
+
+  } catch (err) {
+
+    console.log("CDN FETCH ERROR:", err.message)
+    return null
+
+  }
+}
 
 // ================= STREAM =================
 
