@@ -4,7 +4,7 @@ const cheerio = require("cheerio");
 
 const manifest = {
   id: "org.muj.helloworldaddon",
-  version: "1.0.17",
+  version: "1.0.19",
   name: "Hello World Addon",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
@@ -81,6 +81,10 @@ async function fetchProxy(url) {
         try { data = JSON.parse(data); } catch {}
       }
 
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid API response");
+      }
+
       setCache(url, data);
 
       return data;
@@ -113,13 +117,13 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
     const data = await fetchProxy(apiUrl);
 
-    const results = data.results || [];
+    const results = data.items || [];
 
     const metas = results.slice(0, 30).map(v => ({
-      id: `pokusne_${v.id}`,
+      id: `hs_${v.id}`,
       type: "movie",
       name: v.title,
-      poster: v.thumbnail
+      poster: v.thumbs?.[0] || ""
     }));
 
     console.log("CATALOG RESULTS:", metas.length);
@@ -129,6 +133,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
   } catch (err) {
 
     console.error("CATALOG ERROR:", err.message);
+
     return { metas: [] };
 
   }
@@ -140,9 +145,9 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
 builder.defineMetaHandler(async ({ id }) => {
 
-  const videoId = id.replace("pokusne_", "");
+  const videoId = id.replace("hs_", "");
 
-  const url = `https://pokusne.com/gw/video/${videoId}`;
+  const url = `https://api.hellspy.to/gw/video/${videoId}`;
 
   try {
 
@@ -153,7 +158,7 @@ builder.defineMetaHandler(async ({ id }) => {
         id,
         type: "movie",
         name: data.title || id,
-        poster: data.thumbnail || "",
+        poster: data.thumbs?.[0] || "",
         description: data.description || "",
         year: data.year || null
       }
@@ -180,9 +185,9 @@ builder.defineMetaHandler(async ({ id }) => {
 
 builder.defineStreamHandler(async ({ id }) => {
 
-  const videoId = id.replace("pokusne_", "");
+  const videoId = id.replace("hs_", "");
 
-  const pageUrl = `https://pokusne.com/video/${videoId}`;
+  const pageUrl = `https://hellspy.to/video/${videoId}`;
 
   try {
 
@@ -201,7 +206,7 @@ builder.defineStreamHandler(async ({ id }) => {
       if (src.includes(".mp4") || src.includes(".m3u8")) {
 
         streams.push({
-          url: src.startsWith("http") ? src : `https://pokusne.com${src}`,
+          url: src.startsWith("http") ? src : `https://hellspy.to${src}`,
           title: `Stream ${i + 1}`
         });
 
