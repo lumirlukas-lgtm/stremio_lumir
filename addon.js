@@ -294,5 +294,5 @@ builder.defineStreamHandler(async ({ id }) => {
 
 })
 
-const builder = new addonBuilder(manifest)
+module.exports = builder.getInterface()
 
