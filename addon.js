@@ -84,12 +84,9 @@ async function fetchProxy(url) {
       try { data = JSON.parse(data) } catch {}
     }
 
-    if (!data || !data.items) {
-      console.log("INVALID JSON STRUCTURE")
-      throw new Error("Invalid JSON")
+    if (!data) {
+      throw new Error("Empty response")
     }
-
-    console.log("ITEMS:", data.items.length)
 
     setCache(url, data)
 
@@ -98,13 +95,11 @@ async function fetchProxy(url) {
   } catch (e) {
 
     console.log("FETCH ERROR:", e.message)
-
-    throw new Error("Proxy fetch failed")
+    throw e
 
   }
 
 }
-
 
 // ================= FETCH HTML =================
 
