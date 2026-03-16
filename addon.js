@@ -1,18 +1,19 @@
 const { addonBuilder } = require("stremio-addon-sdk");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const { parseVideoTitle } = require("./parser");
 
 const manifest = {
-  id: "org.muj.helloworldaddon",
-  version: "1.0.19",
-  name: "Hello World Addon",
+  id: "org.muj.helllumiraddon",
+  version: "1.0.20",
+  name: "HellSpy",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
   types: ["movie"],
   catalogs: [
     {
       type: "movie",
-      id: "helloworldmovies",
+      id: "hellspyaddon",
       name: "Search",
       extra: [{ name: "search", isRequired: false }]
     }
@@ -28,7 +29,6 @@ const cache = new Map();
 const CACHE_TIME = 5 * 60 * 1000;
 
 function getCache(key) {
-
   const item = cache.get(key);
 
   if (!item) return null;
@@ -41,20 +41,17 @@ function getCache(key) {
   console.log("CACHE HIT:", key);
 
   return item.data;
-
 }
 
 function setCache(key, data) {
-
   cache.set(key, {
     data,
     expire: Date.now() + CACHE_TIME
   });
-
 }
 
 
-// ---------------- FETCH WITH PROXY ----------------
+// ---------------- FETCH JSON ----------------
 
 async function fetchProxy(url) {
 
@@ -102,6 +99,33 @@ async function fetchProxy(url) {
 }
 
 
+// ---------------- FETCH HTML ----------------
+
+async function fetchHtml(url) {
+
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    url
+  ];
+
+  for (const proxy of proxies) {
+
+    try {
+
+      const res = await axios.get(proxy, { timeout: 10000 });
+
+      if (typeof res.data === "string") return res.data;
+
+    } catch {}
+
+  }
+
+  throw new Error("HTML fetch failed");
+
+}
+
+
 // ---------------- CATALOG ----------------
 
 builder.defineCatalogHandler(async ({ extra }) => {
@@ -119,12 +143,18 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
     const results = data.items || [];
 
-    const metas = results.slice(0, 30).map(v => ({
-      id: `hs_${v.id}`,
-      type: "movie",
-      name: v.title,
-      poster: v.thumbs?.[0] || ""
-    }));
+    const metas = results.slice(0, 30).map(v => {
+
+      const parsed = parseVideoTitle(v.title);
+
+      return {
+        id: `hs_${v.id}`,
+        type: "movie",
+        name: parsed.title || parsed.series || v.title,
+        poster: v.thumbs?.[0] || ""
+      };
+
+    });
 
     console.log("CATALOG RESULTS:", metas.length);
 
@@ -153,14 +183,16 @@ builder.defineMetaHandler(async ({ id }) => {
 
     const data = await fetchProxy(url);
 
+    const parsed = parseVideoTitle(data.title || "");
+
     return {
       meta: {
         id,
         type: "movie",
-        name: data.title || id,
+        name: parsed.title || data.title || id,
         poster: data.thumbs?.[0] || "",
         description: data.description || "",
-        year: data.year || null
+        year: parsed.year || data.year || null
       }
     };
 
@@ -191,7 +223,7 @@ builder.defineStreamHandler(async ({ id }) => {
 
   try {
 
-    const html = await fetchProxy(pageUrl);
+    const html = await fetchHtml(pageUrl);
 
     const $ = cheerio.load(html);
 
