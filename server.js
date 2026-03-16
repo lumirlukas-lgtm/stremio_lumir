@@ -1,15 +1,17 @@
-const { serveHTTP } = require("stremio-addon-sdk")
+const { serveHTTP, getRouter } = require("stremio-addon-sdk")
 const addonInterface = require("./addon")
 const express = require("express")
 const axios = require("axios")
 const cheerio = require("cheerio")
 
-const port = Number(process.env.PORT) || 7000
+const port = process.env.PORT || 7000
 
 const app = express()
 
-// ===== PLAY ROUTE =====
+// router pro addon
+app.use("/", getRouter(addonInterface))
 
+// ===== PLAY ROUTE =====
 app.get("/play/:hash/:id", async (req, res) => {
 
   const { hash, id } = req.params
@@ -22,8 +24,6 @@ app.get("/play/:hash/:id", async (req, res) => {
 
     const page =
       `https://www.hellspy.to/video/${hash}/${id}`
-
-    console.log("SCRAPE PAGE:", page)
 
     const html = await axios.get(page, {
       headers: {
@@ -39,7 +39,7 @@ app.get("/play/:hash/:id", async (req, res) => {
       $("video source").attr("src") ||
       $("source").attr("src")
 
-    console.log("VIDEO SRC FOUND:", videoSrc)
+    console.log("VIDEO SRC:", videoSrc)
 
     if (!videoSrc)
       return res.status(404).send("video not found")
@@ -68,11 +68,6 @@ app.get("/play/:hash/:id", async (req, res) => {
 
 })
 
-// ===== ADDON SERVER =====
-
-serveHTTP(addonInterface, { app, port })
-
-console.log("================================")
-console.log("HellSpy addon running")
-console.log("Port:", port)
-console.log("================================")
+app.listen(port, () => {
+  console.log("Addon running on port", port)
+})
