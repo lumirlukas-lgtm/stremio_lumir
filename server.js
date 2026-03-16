@@ -1,5 +1,8 @@
-const { serveHTTP } = require("stremio-addon-sdk");
-const addonInterface = require("./addon");
+const { serveHTTP } = require("stremio-addon-sdk")
+const addonInterface = require("./addon")
 
-serveHTTP(addonInterface, { port: 7000 });
-console.log("Addon běží na http://127.0.0.1:7000");
+const port = process.env.PORT || 7000
+
+serveHTTP(addonInterface, { port })
+
+console.log("Addon běží na portu:", port)
