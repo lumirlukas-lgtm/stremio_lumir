@@ -59,11 +59,11 @@ async function fetchProxy(url) {
   if (cached) return cached;
 
   const proxies = [
-    `https://corsproxy.io/?${url}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    url
-  ];
+  `https://thingproxy.freeboard.io/fetch/${url}`,
+  `https://corsproxy.io/?${url}`,
+  `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url
+];
 
   for (const proxy of proxies) {
 
@@ -104,10 +104,11 @@ async function fetchProxy(url) {
 async function fetchHtml(url) {
 
   const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    url
-  ];
+  `https://thingproxy.freeboard.io/fetch/${url}`,
+  `https://corsproxy.io/?${url}`,
+  `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url
+];
 
   for (const proxy of proxies) {
 
