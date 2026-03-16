@@ -1,44 +1,79 @@
+const axios = require("axios")
 const { parseVideoTitle } = require("./parser")
 
 async function streamHandler({ id }, { fetchProxy }) {
 
   console.log("STREAM REQUEST:", id)
 
-  const videoId = id.replace("hs_", "")
-
   try {
 
-    const url = `https://api.hellspy.to/gw/video/${videoId}`
+    let title
 
-    const data = await fetchProxy(url)
+    // pokud je to IMDB id
+    if (id.startsWith("tt")) {
 
-    const parsed = parseVideoTitle(data.title || "")
+      const meta = await axios.get(
+        `https://v3-cinemeta.strem.io/meta/movie/${id}.json`
+      )
 
-    const sizeGB = data.size
-      ? (data.size / 1024 / 1024 / 1024).toFixed(1)
-      : "?"
+      title = meta.data.meta.name
 
-    const stream = {
+      console.log("CINEMETA TITLE:", title)
 
-      name: "HellSpy",
+    } else {
 
-      title:
-        `${parsed.quality || ""} ` +
-        `${parsed.audio?.join("-") || ""} ` +
-        `💾${sizeGB}GB`,
+      // pokud je to Hellspy id
+      const videoId = id.replace("hs_", "")
 
-      externalUrl:
-        `https://www.hellspy.to/video/${data.fileHash}/${data.id}`,
+      const data = await fetchProxy(
+        `https://api.hellspy.to/gw/video/${videoId}`
+      )
 
-      behaviorHints: {
-        bingeGroup: "hellspy"
-      }
+      title = data.title
+
+      console.log("HELLSPY TITLE:", title)
 
     }
 
-    console.log("STREAM READY")
+    // hledání na Hellspy
+    const searchUrl =
+      `https://api.hellspy.to/gw/search?query=${encodeURIComponent(title)}&limit=10`
 
-    return { streams: [stream] }
+    const search = await fetchProxy(searchUrl)
+
+    const results = search.items || []
+
+    const streams = results.map(v => {
+
+      const parsed = parseVideoTitle(v.title)
+
+      const sizeGB = v.size
+        ? (v.size / 1024 / 1024 / 1024).toFixed(1)
+        : "?"
+
+      return {
+
+        name: "HellSpy",
+
+        title:
+          `${parsed.quality || ""} ` +
+          `${parsed.audio?.join("-") || ""} ` +
+          `💾${sizeGB}GB`,
+
+        externalUrl:
+          `https://www.hellspy.to/video/${v.fileHash}/${v.id}`,
+
+        behaviorHints: {
+          bingeGroup: "hellspy"
+        }
+
+      }
+
+    })
+
+    console.log("STREAM COUNT:", streams.length)
+
+    return { streams }
 
   } catch (err) {
 
