@@ -3,9 +3,11 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const { parseVideoTitle } = require("./parser");
 
+console.log("STARTING HellSpy addon v1.0.21");
+
 const manifest = {
   id: "org.muj.helllumiraddon",
-  version: "1.0.20",
+  version: "1.0.21",
   name: "HellSpy",
   description: "Search addon",
   resources: ["catalog", "meta", "stream"],
@@ -23,12 +25,14 @@ const manifest = {
 const builder = new addonBuilder(manifest);
 
 
+
 // ---------------- CACHE ----------------
 
 const cache = new Map();
 const CACHE_TIME = 5 * 60 * 1000;
 
 function getCache(key) {
+
   const item = cache.get(key);
 
   if (!item) return null;
@@ -41,44 +45,69 @@ function getCache(key) {
   console.log("CACHE HIT:", key);
 
   return item.data;
+
 }
 
 function setCache(key, data) {
+
+  console.log("CACHE SET:", key);
+
   cache.set(key, {
     data,
     expire: Date.now() + CACHE_TIME
   });
+
 }
+
 
 
 // ---------------- FETCH JSON ----------------
 
 async function fetchProxy(url) {
 
+  console.log("FETCH JSON:", url);
+
   const cached = getCache(url);
   if (cached) return cached;
 
-const proxies = [
-  `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
-  url
-];
+  const proxies = [
+    `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
+    url
+  ];
 
   for (const proxy of proxies) {
 
     try {
 
-      console.log("TRY:", proxy);
+      console.log("TRY PROXY:", proxy);
 
-      const res = await axios.get(proxy, { timeout: 10000 });
+      const res = await axios.get(proxy, {
+        timeout: 20000,
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json"
+        }
+      });
+
+      console.log("STATUS:", res.status);
 
       let data = res.data;
 
       if (typeof data === "string") {
-        try { data = JSON.parse(data); } catch {}
+
+        console.log("STRING RESPONSE LENGTH:", data.length);
+
+        try {
+          data = JSON.parse(data);
+          console.log("JSON PARSED OK");
+        } catch (err) {
+          console.log("JSON PARSE FAIL");
+        }
+
       }
 
-      if (!data || typeof data !== "object") {
-        throw new Error("Invalid API response");
+      if (!data) {
+        throw new Error("Empty API response");
       }
 
       setCache(url, data);
@@ -88,6 +117,7 @@ const proxies = [
     } catch (e) {
 
       console.log("PROXY FAIL:", proxy);
+      console.log("ERROR:", e.message);
 
     }
 
@@ -97,24 +127,48 @@ const proxies = [
 
 }
 
+
+
 // ---------------- FETCH HTML ----------------
 
 async function fetchHtml(url) {
 
-const proxies = [
-  `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
-  url
-];
+  console.log("FETCH HTML:", url);
+
+  const proxies = [
+    `https://rough-fire-098c.lumirlukas.workers.dev/?url=${encodeURIComponent(url)}`,
+    url
+  ];
 
   for (const proxy of proxies) {
 
     try {
 
-      const res = await axios.get(proxy, { timeout: 10000 });
+      console.log("TRY HTML PROXY:", proxy);
 
-      if (typeof res.data === "string") return res.data;
+      const res = await axios.get(proxy, {
+        timeout: 20000,
+        headers: {
+          "User-Agent": "Mozilla/5.0"
+        }
+      });
 
-    } catch {}
+      console.log("HTML STATUS:", res.status);
+
+      if (typeof res.data === "string") {
+
+        console.log("HTML SIZE:", res.data.length);
+
+        return res.data;
+
+      }
+
+    } catch (e) {
+
+      console.log("HTML PROXY FAIL:", proxy);
+      console.log("ERROR:", e.message);
+
+    }
 
   }
 
@@ -123,16 +177,24 @@ const proxies = [
 }
 
 
+
 // ---------------- CATALOG ----------------
 
 builder.defineCatalogHandler(async ({ extra }) => {
 
-  if (!extra || !extra.search) return { metas: [] };
+  console.log("CATALOG REQUEST:", extra);
+
+  if (!extra || !extra.search) {
+    console.log("NO SEARCH QUERY");
+    return { metas: [] };
+  }
 
   const query = extra.search.trim();
 
+  console.log("SEARCH QUERY:", query);
+
   const apiUrl =
-    `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=64`;
+    `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=30`;
 
   try {
 
@@ -140,9 +202,13 @@ builder.defineCatalogHandler(async ({ extra }) => {
 
     const results = data.items || [];
 
+    console.log("RESULT COUNT:", results.length);
+
     const metas = results.slice(0, 30).map(v => {
 
       const parsed = parseVideoTitle(v.title);
+
+      console.log("PARSED TITLE:", parsed.title || parsed.series || v.title);
 
       return {
         id: `hs_${v.id}`,
@@ -168,9 +234,12 @@ builder.defineCatalogHandler(async ({ extra }) => {
 });
 
 
+
 // ---------------- META ----------------
 
 builder.defineMetaHandler(async ({ id }) => {
+
+  console.log("META REQUEST:", id);
 
   const videoId = id.replace("hs_", "");
 
@@ -181,6 +250,8 @@ builder.defineMetaHandler(async ({ id }) => {
     const data = await fetchProxy(url);
 
     const parsed = parseVideoTitle(data.title || "");
+
+    console.log("META TITLE:", parsed.title || data.title);
 
     return {
       meta: {
@@ -210,9 +281,12 @@ builder.defineMetaHandler(async ({ id }) => {
 });
 
 
+
 // ---------------- STREAM ----------------
 
 builder.defineStreamHandler(async ({ id }) => {
+
+  console.log("STREAM REQUEST:", id);
 
   const videoId = id.replace("hs_", "");
 
@@ -256,5 +330,7 @@ builder.defineStreamHandler(async ({ id }) => {
   }
 
 });
+
+
 
 module.exports = builder.getInterface();
