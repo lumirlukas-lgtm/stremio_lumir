@@ -2,10 +2,10 @@ const { addonBuilder } = require("stremio-addon-sdk")
 const axios = require("axios")
 const { parseVideoTitle } = require("./parser")
 
-console.log("STARTING HellSpy addon v1.0.22")
+console.log("STARTING hellspy addon v1.0.22")
 
 const manifest = {
-  id: "org.muj.helllumiraddon",
+  id: "org.muj.hellspyaddon",
   version: "1.0.22",
   name: "HellSpy",
   description: "Search addon",
@@ -117,7 +117,7 @@ builder.defineCatalogHandler(async ({ extra }) => {
   console.log("SEARCH:", query)
 
   const apiUrl =
-    `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=20`
+  `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=20`
 
   try {
 
@@ -188,6 +188,39 @@ builder.defineMetaHandler(async ({ id }) => {
 
   }
 
+  console.log("META NOT IN CACHE, fetching from API...")
+
+  const videoId = id.replace("hs_", "")
+
+  try {
+
+    const videoData = await fetchProxy(
+  `https://api.hellspy.to/gw/video/${videoId}`
+)
+
+    if (videoData && videoData.title) {
+
+      const parsed = parseVideoTitle(videoData.title)
+
+      return {
+        meta: {
+          id,
+          type: "movie",
+          name: parsed.title || parsed.series || videoData.title,
+          poster: videoData.thumbs?.[0] || "",
+          description: "",
+          year: parsed.year || null
+        }
+      }
+
+    }
+
+  } catch (err) {
+
+    console.log("META API ERROR:", err.message)
+
+  }
+
   console.log("META NOT FOUND")
 
   return {
@@ -210,7 +243,7 @@ builder.defineStreamHandler(async ({ id }) => {
 
   if (!id.startsWith("hs_")) {
 
-    console.log("NOT HELLSYP ID:", id)
+    console.log("NOT HS ID:", id)
 
     return { streams: [] }
 
@@ -226,7 +259,7 @@ builder.defineStreamHandler(async ({ id }) => {
 
     if (!item) continue
 
-    console.log("STREAM FOUND:", item.id)
+    console.log("STREAM FOUND IN CACHE:", item.id)
 
     const parsed = parseVideoTitle(item.title)
 
@@ -235,15 +268,14 @@ builder.defineStreamHandler(async ({ id }) => {
       : "?"
 
     const url =
-      `https://www.hellspy.to/video/${item.fileHash}/${item.id}`
+      `https://hellspy.to/video/${item.fileHash}/${item.id}`
 
     console.log("STREAM URL:", url)
 
     return {
       streams: [{
         name: "HellSpy",
-        title:
-          `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
+        title: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""} 💾${sizeGB}GB`,
         externalUrl: url,
         behaviorHints: {
           bingeGroup: "hellspy"
@@ -253,9 +285,64 @@ builder.defineStreamHandler(async ({ id }) => {
 
   }
 
-  console.log("STREAM NOT FOUND IN CACHE")
+  console.log("STREAM NOT IN CACHE, fetching from API...")
 
-  return { streams: [] }
+  try {
+
+    const videoData = await fetchProxy(
+      `https://api.hellspy.to/gw/video/${videoId}`
+    )
+
+    if (!videoData || !videoData.title) {
+      console.log("VIDEO DATA MISSING")
+      return { streams: [] }
+    }
+
+    const parsedVideo = parseVideoTitle(videoData.title)
+
+    const query =
+      `${parsedVideo.title || parsedVideo.series} ${parsedVideo.year || ""}`.trim()
+
+    console.log("SEARCH FOR STREAMS:", query)
+
+    const searchData = await fetchProxy(
+  `https://api.hellspy.to/gw/search?query=${encodeURIComponent(query)}&offset=0&limit=20`
+)
+    const results = searchData.items || []
+
+    console.log("STREAM SEARCH RESULTS:", results.length)
+
+    const streams = results
+      .filter(v => v.fileHash && v.id)
+      .map(v => {
+
+        const parsed = parseVideoTitle(v.title)
+
+        const sizeGB = v.size
+          ? (v.size / 1024 / 1024 / 1024).toFixed(1)
+          : "?"
+
+        return {
+          name: "HellSpy",
+          description: `${parsed.quality || ""} ${parsed.audio?.join("-") || ""}`,
+          title: `💾${sizeGB}GB`,
+          externalUrl:
+            `https://stremio-lumir.onrender.com/play/${v.fileHash}/${v.id}`
+        }
+
+      })
+
+    console.log("STREAMS RETURNED:", streams.length)
+
+    return { streams }
+
+  } catch (err) {
+
+    console.log("STREAM ERROR:", err.message)
+
+    return { streams: [] }
+
+  }
 
 })
 
